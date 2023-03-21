@@ -1,5 +1,4 @@
 # containers-playground-journey
-
 Fala, cambada de nerd!
 
 Sou um Arquiteto de Soluções, curto criar plataformas, engenharia de sistemas distribuídos, microsserviços, containers e tecnologia nativa em nuvem. Além disso, sou um grande entusiasta de DevOps, incentivando o uso de tecnologias de automação e de código aberto para ajudar as pessoas a se tornarem autônomas.
