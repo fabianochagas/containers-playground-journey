@@ -1,6 +1,6 @@
 # Usando o Docker: criando contêineres MySQL e WordPress
 
-Este tutorial irá guiar você na criação de dois contêineres Docker: um MySQL e um WordPress que usa o MySQL como banco de dados. Ambos os contêineres estarão na mesma "mini-rede" no Docker chamada mydockernetwork. 
+Este tutorial irá guiar você na criação de dois contêineres Docker: um MySQL e um WordPress que usa o MySQL como banco de dados. Ambos os contêineres estarão na mesma "mini-rede" no Docker chamada wordpressnetwork. 
 
 Ao invés de termos que instalar no nosso host um serviço completo de MySQL e outro serviço de Wordpress, vamos fazer isso tudo em contêiners. Isto é apenas um exemplo de como podemos lançar mão do uso de contêineres para facilitar a vida. Em muitos casos, as empresas não nos deixam instalar quase nada nos nossos laptops (por questões de segurança ou mesmo por pura encheção de saco de algum arquiteto de soluçoes que resolveu mandar uma meia-trava), entao, se tivermos apenas o docker instalado, já é um grande adianto. 
 
@@ -14,14 +14,17 @@ Certifique-se de que o Docker Desktop (para Windows e Mac) está rodando antes d
 
 O comando _Docker_ é cheio de parâmetros e com eles fazemos tudo o que precisamos e até mesmo por isso é hiper extenso. Aqui vamos nos ater apenas aos poucos comandos necessários para lançar os dois contêineres e assim termos o Wordpress funcionando.   
 
-## Passo 2: Crie a rede no Docker 
 
-O próximo passo é criar a rede Docker que os contêineres usarão. Para fazer isso, abra um terminal e execute o seguinte comando, a partir de qualquer diretório:
+## Passo 1: Crie a rede no Docker 
+
+O próximo passo é criar a rede Docker que os contêineres usarão. 
+Este passo não é obrigatório, porém acho uma boa-prática para deixar numa mesma network (nesse caso podemos comparar a uma vNet) os contêineres que fazem parte do mesmo pacote de aplicaçoes. Veremos mais pra frente o que isso significa.
+Para fazer isso, abra um terminal e execute o seguinte comando, a partir de qualquer diretório:
 
 ```
-docker network create mydockernetwork
+docker network create wordpressnetwork
 ```
-Este comando criará uma rede Docker chamada mydockernetwork. Lance o comando seguinte para listar quais _networks_ estão criadas em seu host (este seu computador local, pra ser mais exato. Mas já é legal começar a se acostumar com essa nomenclatura).
+Este comando criará uma rede Docker chamada wordpressnetwork. Lance o comando seguinte para listar quais _networks_ estão criadas em seu host (este seu computador local, pra ser mais exato. Mas já é legal começar a se acostumar com essa nomenclatura).
 
 ```
 docker network ls
@@ -33,7 +36,7 @@ NETWORK ID     NAME                DRIVER    SCOPE
 07f16799bec9   bridge              bridge    local
 fb5d5a10c748   host                host      local
 c1be246ad7db   kind                bridge    local
-624d5dafd1f2   mydockernetwork     bridge    local
+624d5dafd1f2   wordpressnetwork     bridge    local
 0a0de3aeaaa0   none                null      local
 ```
 
@@ -41,8 +44,19 @@ c1be246ad7db   kind                bridge    local
 
 O próximo passo é criar o contêiner MySQL. Para fazer isso, execute o seguinte comando:
 ```
-docker run --name mysql-container --network mydockernetwork -e MYSQL_ROOT_PASSWORD=senha123 -d mysql:latest
+docker run --rm -d `
+--name mysql `
+--net wordpressnetwork `
+-e MYSQL_DATABASE=exampledb `
+-e MYSQL_USER=exampleuser `
+-e MYSQL_PASSWORD=examplepassword `
+-e MYSQL_RANDOM_ROOT_PASSWORD=1 `
+-v ${PWD}/data:/var/lib/mysql `
+mysql-local:1.0.0
 ```
+### Observaçao:
+Na linha de comando acima a gente tem o _backtick_ (`), que é apenas para continuar escrevendo o comando na linha seguinte e funciona em <u>WINDOWS</u>. Para <u>Linux/Mac</u>, troque o _backtick_ por uma barra invertida (\\).<br>
+
 
 O comando _docker_ usado acima temos: 
 
@@ -56,10 +70,18 @@ O comando _docker_ usado acima temos:
 
 ```-d``` - _Detached_ - quer dizer que o Docker vai iniciar o contêiner em background e vai informar o contêiner-ID (diferente do nome do contêiner)
 
-```mysql:latest``` - Neste ultimo parâmetro informamos qual é a imagem a partir da qual o contêiner será criado (mysql), e qual versão da imagem (latest). Se esta imagem não estiver ainda sido baixada no seu host, o Docker vai fazer o _pull_ automagicamente. Este _pull_ é feito, por padrao do [Docker Hub](https://hub.docker.com/). Isto é importante para fazermos uso da exata versão da imagem que precisamos. Por exemplo: "na minha empresa usamos o MySQL versão 5.7.41", entao para esse caso usaríamos ```mysql:5.7.41```. Assim estaremos usando no nosso host a mesma versão do MySQL que está em uso na empresa, evitando incompatibilidade. Seria muito simples usarmos sempre a ultima versao disponível (```latest```), mas não é sempre assim que as empresas usam. 
+```mysql-local:1.0.0``` - Neste ultimo parâmetro informamos qual é a imagem a partir da qual o contêiner será criado (mysql-local), e qual versão da imagem (1.0.0). Se esta imagem não estiver ainda sido baixada no seu host, o Docker vai fazer o _pull_ automagicamente. Este _pull_ é feito, por padrao do [Docker Hub](https://hub.docker.com/). Isto é importante para fazermos uso da exata versão da imagem que precisamos. Por exemplo: "na minha empresa usamos o MySQL versão 5.7.41", entao para esse caso usaríamos ```mysql:5.7.41```. Assim estaremos usando no nosso host a mesma versão do MySQL que está em uso na empresa, evitando incompatibilidade. Seria muito simples usarmos sempre a ultima versao disponível (```latest```), mas não é sempre assim que as empresas usam. 
 
 ```
-docker run --name mysql-container --network mydockernetwork -e MYSQL_ROOT_PASSWORD=senha123 -d mysql:latest
+docker run --rm -d `
+--name mysql `
+--net wordpressnetwork `
+-e MYSQL_DATABASE=exampledb `
+-e MYSQL_USER=exampleuser `
+-e MYSQL_PASSWORD=examplepassword `
+-e MYSQL_RANDOM_ROOT_PASSWORD=1 `
+-v ${PWD}/data:/var/lib/mysql `
+mysql-local:1.0.0
 Unable to find image 'mysql:latest' locally
 latest: Pulling from library/mysql
 767a87c58327: Downloading [============>                                      ]  11.42MB/44.56MB
@@ -76,7 +98,7 @@ e935886e1025: Waiting
 ```
 Ao final, teremos algo semelhante a isso: 
 ```
-docker run --name mysql-container --network mydockernetwork -e MYSQL_ROOT_PASSWORD=senha123 -d mysql:latest
+docker run --name mysql-container --network wordpressnetwork -e MYSQL_ROOT_PASSWORD=senha123 -d mysql:latest
 Unable to find image 'mysql:latest' locally
 latest: Pulling from library/mysql
 767a87c58327: Pull complete
